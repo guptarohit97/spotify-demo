@@ -37,7 +37,7 @@ export const createSong = async (req, res, next) => {
 // export const addUser
 const uploadToCloudinary=async (file)=>{
       try{
-            const result =await cloudinary.oploader.upload(file.tempFilePath,{
+            const result =await cloudinary.uploader.upload(file.tempFilePath,{
                   resource_type:"auto",
             })
             return result.secure_url
@@ -61,4 +61,50 @@ export const deleteSong=async(req,res,next)=>{
             console.log("Error in deleting ",error)
             next(error)
       }
+}
+
+export const createAlbum=async(req,res,next)=>{
+      try{
+            const {title,artist,releaseYear}=req.body
+            const {imageFile}=req.files
+            const imageUrl=await uploadToCloudinary(imageFile)
+            const album=new Album({
+                  title,artist,imageUrl,releaseYear
+            })
+            await album.save()
+            res.status(200).json(album)
+
+      }
+      catch(error){
+            console.log("Error in create Album",error)
+            next(error)
+      }
+}
+
+export const deleteAlbum = async (req, res, next) => {
+  try {
+    const { id } = req.params
+
+    const album = await Album.findById(id)
+    if (!album) {
+      return res.status(404).json({ message: "Album not found" })
+    }
+
+    // delete all songs in this album
+    await Song.deleteMany({ albumId: id })
+
+    // delete album
+    await Album.findByIdAndDelete(id)
+
+    res.status(200).json({
+      message: "Album and associated songs deleted successfully",
+    })
+  } catch (error) {
+    console.log("Error in deleteAlbum", error)
+    next(error)
+  }
+}
+
+export const checkAdmin =async(req,res,next)=>{
+      res.status(200).json({admin:true})
 }
